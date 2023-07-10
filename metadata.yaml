@@ -1,6 +1,7 @@
 name: charmed-gh-jira-sync-bot
 display-name: Charmed GitHub Jira Bot
 summary: Charmed https://github.com/canonical/gh-jira-sync-bot
+description: Charmed https://github.com/canonical/gh-jira-sync-bot
 
 containers:
   gh-jira-bot:
