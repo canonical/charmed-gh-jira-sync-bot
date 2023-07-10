@@ -1,3 +1,4 @@
+"""Charm code for https://github.com/canonical/gh-jira-sync-bot."""
 import logging
 
 import ops
@@ -6,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class GitHubJiraBotCharm(ops.CharmBase):
+    """Charm class for https://github.com/canonical/gh-jira-sync-bot."""
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -13,7 +15,7 @@ class GitHubJiraBotCharm(ops.CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
     def _on_config_changed(self, event: ops.ConfigChangedEvent):
-        port = self.config["port"]
+        self._handle_ports()
 
         container = self.unit.get_container("gh-jira-bot")
         if container.can_connect():
@@ -29,13 +31,14 @@ class GitHubJiraBotCharm(ops.CharmBase):
 
     @property
     def app_environment(self):
+        """Environment variables extracted from config."""
         env = {
             "APP_ID": self.config["app-id"],
             "PRIVATE_KEY": self.config["private-key"],
             "WEBHOOK_SECRET": self.config["webhook-secret"],
             "JIRA_INSTANCE": self.config["jira-instance"],
             "JIRA_USERNAME": self.config["jira-username"],
-            "JIRA_TOKEN": self.config["jira-token"]
+            "JIRA_TOKEN": self.config["jira-token"],
         }
         if bot_config := self.config["bot-config"]:
             env["DEFAULT_BOT_CONFIG"] = bot_config
@@ -46,20 +49,39 @@ class GitHubJiraBotCharm(ops.CharmBase):
 
     @property
     def _pebble_layer(self):
+        command = " ".join(
+            [
+                "uvicorn",
+                "github_jira_sync_app.main:app",
+                "--host=0.0.0.0",
+                f"--port={self.config['port']}",
+            ]
+        )
 
         return {
-            "summary": "httpbin layer",
-            "description": "pebble config layer for httpbin",
+            "summary": "gh-jira-bot layer",
             "services": {
-                "httpbin": {
+                "gh-jira-bot-service": {
                     "override": "replace",
                     "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
+                    "command": command,
                     "startup": "enabled",
                     "environment": self.app_environment,
                 }
             },
         }
+
+    def _handle_ports(self):
+        port = int(self.config["port"])
+        opened_ports = self.unit.opened_ports()
+
+        if port in [i.port for i in opened_ports]:
+            return
+
+        for o_port in opened_ports:
+            self.unit.close_port(o_port.protocol, o_port.port)
+
+        self.unit.open_port("tcp", port)
 
 
 if __name__ == "__main__":  # pragma: nocover
