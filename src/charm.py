@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Charm code for https://github.com/canonical/gh-jira-sync-bot."""
 import logging
 
@@ -85,4 +86,4 @@ class GitHubJiraBotCharm(ops.CharmBase):
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main(GitHubJiraBotCharm)
+    ops.main.main(GitHubJiraBotCharm)
