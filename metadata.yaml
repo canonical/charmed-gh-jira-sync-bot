@@ -1,4 +1,4 @@
-name: charmed-gh-jira-sync-bot
+name: charmed-github-jira-bot
 display-name: Charmed GitHub Jira Bot
 summary: Charmed https://github.com/canonical/gh-jira-sync-bot
 description: Charmed https://github.com/canonical/gh-jira-sync-bot
