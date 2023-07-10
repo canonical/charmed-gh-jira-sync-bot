@@ -1,8 +1,22 @@
 options:
-  log-level:
-    description: |
-      Configures the log level of gunicorn. 
-
-      Acceptable values are: "info", "debug", "warning", "error" and "critical"
-    default: "info"
+  port:
+    default: 3000
+    type: int
+  app-id:
+    type: string
+  private-key:
+    type: string
+  webhook-secret:
+    type: string
+  jira-instance:
+    type: string
+  jira-username:
+    type: string
+  jira-token:
+    type: string
+  bot-config:
+    default: ""
+    type: string
+  bot-name:
+    default: ""
     type: string
