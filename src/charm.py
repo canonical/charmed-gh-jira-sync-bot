@@ -4,6 +4,8 @@ import logging
 
 import ops
 
+from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
+
 logger = logging.getLogger(__name__)
 
 
@@ -12,6 +14,14 @@ class GitHubJiraBotCharm(ops.CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
+
+        require_nginx_route(
+            charm=self,
+            service_hostname=self.app.name,
+            service_name=self.app.name,
+            service_port=int(self.config["port"])
+        )
+
         self.framework.observe(self.on.gh_jira_bot_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
