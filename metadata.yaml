@@ -11,6 +11,9 @@ containers:
   gh-jira-bot:
     resource: oci-image
 
+requires:
+  nginx-route:
+    interface: nginx-route
 
 resources:
   oci-image:
