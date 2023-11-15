@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Charm code for https://github.com/canonical/gh-jira-sync-bot."""
 import logging
+import os
 
 import ops
 
@@ -55,6 +56,18 @@ class GitHubJiraBotCharm(ops.CharmBase):
             env["DEFAULT_BOT_CONFIG"] = bot_config
         if bot_name := self.config["bot-name"]:
             env["BOT_NAME"] = bot_name
+        # Proxy settings, if applicable.
+        http_proxy = os.environ.get("HTTP_PROXY", "")
+        https_proxy = os.environ.get("HTTPS_PROXY", "")
+        no_proxy = os.environ.get("NO_PROXY", "")
+        if http_proxy and https_proxy:
+            logger.info(
+                "Proxy settings found: HTTP_PROXY=%s, HTTPS_PROXY=%s, NO_PROXY=%s",
+                http_proxy, https_proxy, no_proxy
+            )
+            env["HTTP_PROXY"] = http_proxy
+            env["HTTPS_PROXY"] = https_proxy
+            env["NO_PROXY"] = no_proxy
 
         return env
 
