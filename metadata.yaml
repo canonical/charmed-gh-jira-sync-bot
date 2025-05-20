@@ -14,8 +14,10 @@ containers:
 requires:
   nginx-route:
     interface: nginx-route
+  redis:
+    interface: redis
 
 resources:
   oci-image:
     type: oci-image
-    upstream-source: ghcr.io/canonical/gh-jira-sync-bot:0.0.13
+    upstream-source: ghcr.io/canonical/gh-jira-sync-bot:0.0.14
