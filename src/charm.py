@@ -6,12 +6,15 @@ import os
 import ops
 
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
+from charms.redis_k8s.v0.redis import RedisRequires, RedisRelationCharmEvents
 
 logger = logging.getLogger(__name__)
 
 
 class GitHubJiraBotCharm(ops.CharmBase):
     """Charm class for https://github.com/canonical/gh-jira-sync-bot."""
+
+    on = RedisRelationCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -23,8 +26,11 @@ class GitHubJiraBotCharm(ops.CharmBase):
             service_port=int(self.config["port"])
         )
 
+        self.redis = RedisRequires(self, "redis")
+
         self.framework.observe(self.on.gh_jira_bot_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.redis_relation_updated, self._on_config_changed)
 
     def _on_config_changed(self, event: ops.ConfigChangedEvent):
         self._handle_ports()
@@ -69,6 +75,13 @@ class GitHubJiraBotCharm(ops.CharmBase):
             env["HTTPS_PROXY"] = https_proxy
             env["NO_PROXY"] = no_proxy
 
+        if self.model.get_relation("redis"):
+            redis_host = self.redis.relation_data.get("hostname")
+            redis_port = self.redis.relation_data.get("port")
+
+            if redis_port and redis_host:
+                env["REDIS_HOST"] = redis_host
+                env["REDIS_PORT"] = redis_port
         return env
 
     @property
