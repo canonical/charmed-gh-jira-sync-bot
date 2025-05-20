@@ -75,12 +75,13 @@ class GitHubJiraBotCharm(ops.CharmBase):
             env["HTTPS_PROXY"] = https_proxy
             env["NO_PROXY"] = no_proxy
 
-        redis_host = self.redis.relation_data.get("hostname")
-        redis_port = self.redis.relation_data.get("port")
+        if self.model.get_relation("redis"):
+            redis_host = self.redis.relation_data.get("hostname")
+            redis_port = self.redis.relation_data.get("port")
 
-        if redis_port and redis_host:
-            env["REDIS_HOST"] = redis_host
-            env["REDIS_PORT"] = redis_port
+            if redis_port and redis_host:
+                env["REDIS_HOST"] = redis_host
+                env["REDIS_PORT"] = redis_port
         return env
 
     @property
