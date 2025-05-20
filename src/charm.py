@@ -28,7 +28,7 @@ class GitHubJiraBotCharm(ops.CharmBase):
 
         self.framework.observe(self.on.gh_jira_bot_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.redis.on.redis_relation_updated, self._on_config_changed)
+        self.framework.observe(self.redis.charm.on.redis_relation_updated, self._on_config_changed)
 
     def _on_config_changed(self, event: ops.ConfigChangedEvent):
         self._handle_ports()
