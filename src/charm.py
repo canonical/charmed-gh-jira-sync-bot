@@ -6,7 +6,7 @@ import os
 import ops
 
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
-from charms.redis_k8s.v0.redis import RedisRequires
+from charms.redis_k8s.v0.redis import RedisRequires, RedisRelationCharmEvents
 
 logger = logging.getLogger(__name__)
 
