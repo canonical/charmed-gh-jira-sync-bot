@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class GitHubJiraBotCharm(ops.CharmBase):
     """Charm class for https://github.com/canonical/gh-jira-sync-bot."""
 
-    redis_evt = RedisRelationCharmEvents()
+    on = RedisRelationCharmEvents()
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -30,7 +30,7 @@ class GitHubJiraBotCharm(ops.CharmBase):
 
         self.framework.observe(self.on.gh_jira_bot_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(self.redis_evt.redis_relation_updated, self._on_config_changed)
+        self.framework.observe(self.on.redis_relation_updated, self._on_config_changed)
 
     def _on_config_changed(self, event: ops.ConfigChangedEvent):
         self._handle_ports()
