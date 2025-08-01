@@ -20,6 +20,8 @@ requires:
     interface: nginx-route
   redis:
     interface: redis
+  logging:
+    interface: loki_push_api
 
 resources:
   oci-image:
