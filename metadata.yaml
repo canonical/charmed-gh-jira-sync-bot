@@ -11,6 +11,10 @@ containers:
   gh-jira-bot:
     resource: oci-image
 
+provides:
+  metrics-endpoint:
+    interface: prometheus_scrape
+
 requires:
   nginx-route:
     interface: nginx-route

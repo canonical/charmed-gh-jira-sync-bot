@@ -7,6 +7,7 @@ import ops
 
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.redis_k8s.v0.redis import RedisRequires, RedisRelationCharmEvents
+from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,20 @@ class GitHubJiraBotCharm(ops.CharmBase):
         )
 
         self.redis = RedisRequires(self, "redis")
+
+        self.metrics_endpoint = MetricsEndpointProvider(
+            self,
+            "metrics-endpoint",
+            jobs=[
+                {
+                    "job_name": self.model.app.name,
+                    "metrics_path": "/metrics",
+                    "static_configs": [{"targets": [f"*:{self.config['port']}"]}],
+                    "scrape_interval": "15s",  # TODO: move to config.yaml
+                    "scrape_timeout": "10s",
+                }
+            ],
+        )
 
         self.framework.observe(self.on.gh_jira_bot_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
