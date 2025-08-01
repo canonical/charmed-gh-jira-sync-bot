@@ -2,9 +2,9 @@ import pytest
 import asyncio
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
-
-from helpers import charm_resources
-
+import logging
+from helpers import charm_resources, get_prometheus_targets
+logger = logging.getLogger(__name__)
 #@pytest.mark.setup
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, syncbot_charm: str, cos_channel, config):
@@ -37,3 +37,16 @@ async def test_integrate(ops_test: OpsTest):
         status="active",
         timeout=300,
     )
+
+@retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
+async def test_metrics_endpoint(ops_test: OpsTest):
+    """Check that Syncbot appears in the Prometheus Scrape Targets."""
+    assert ops_test.model is not None
+    targets = await get_prometheus_targets(ops_test)
+    logger.info("Targets %s", targets)
+    targets = [
+        target
+        for target in targets["activeTargets"]
+        if target["discoveredLabels"]["juju_charm"] == "charmed-github-jira-bot"
+    ]
+    assert targets
