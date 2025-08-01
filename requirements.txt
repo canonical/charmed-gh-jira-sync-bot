@@ -1,1 +1,4 @@
 ops >= 2.2.0
+tenacity
+pytest-asyncio
+pytest
