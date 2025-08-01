@@ -20,4 +20,4 @@ requires:
 resources:
   oci-image:
     type: oci-image
-    upstream-source: ghcr.io/canonical/gh-jira-sync-bot:0.0.15
+    upstream-source: ghcr.io/canonical/gh-jira-sync-bot:0.0.16
