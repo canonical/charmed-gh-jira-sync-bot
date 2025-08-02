@@ -57,3 +57,18 @@ async def get_prometheus_targets(
     assert response.json()["status"] == "success"
 
     return response.json()["data"]
+
+async def query_prometheus(
+    ops_test: OpsTest, query: str, app: str = "prometheus"
+) -> Dict[str, Any]:
+    leader_unit_number = await get_leader_unit_number(ops_test, app)
+    prometheus_url = await get_unit_address(ops_test, app, leader_unit_number)
+
+    response = requests.get(
+        f"http://{prometheus_url}:9090/api/v1/query",
+        params={"query": query},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"  # the query was successful
+    return response.json()["data"]["result"]

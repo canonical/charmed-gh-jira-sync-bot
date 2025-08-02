@@ -3,7 +3,7 @@ import asyncio
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 import logging
-from helpers import charm_resources, get_prometheus_targets
+from helpers import charm_resources, get_prometheus_targets, query_prometheus
 logger = logging.getLogger(__name__)
 #@pytest.mark.setup
 @pytest.mark.abort_on_fail
@@ -50,3 +50,9 @@ async def test_metrics_endpoint(ops_test: OpsTest):
         if target["discoveredLabels"]["juju_charm"] == "charmed-github-jira-bot"
     ]
     assert targets
+
+@retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
+async def test_metrics_in_prometheus(ops_test: OpsTest):
+    """Check that the metrics sent by this charm appear in Prometheus."""
+    result = await query_prometheus(ops_test, query='up{juju_charm=~"charmed-github-jira-bot"}')
+    assert result
