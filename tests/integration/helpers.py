@@ -3,6 +3,10 @@ from typing import Dict
 from pytest_operator.plugin import OpsTest
 from typing import Any
 import requests
+import logging
+import subprocess
+
+logger = logging.getLogger(__name__)
 
 def charm_resources(metadata_file="metadata.yaml") -> Dict[str, str]:
     with open(metadata_file, "r") as file:
@@ -72,3 +76,24 @@ async def query_prometheus(
     assert response.status_code == 200
     assert response.json()["status"] == "success"  # the query was successful
     return response.json()["data"]["result"]
+
+async def get_pebble_plan(
+    model_name: str, app_name: str, unit_num: int, container_name: str
+) -> str:
+    cmd = [
+        "juju",
+        "ssh",
+        "--model",
+        model_name,
+        "--container",
+        container_name,
+        f"{app_name}/{unit_num}",
+        "./charm/bin/pebble",
+        "plan",
+    ]
+    try:
+        res = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        logger.error(e.stdout.decode())
+        raise e
+    return res.stdout.decode("utf-8")

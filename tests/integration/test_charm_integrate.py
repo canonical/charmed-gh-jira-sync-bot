@@ -3,8 +3,11 @@ import asyncio
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 import logging
-from helpers import charm_resources, get_prometheus_targets, query_prometheus
+import yaml
+from helpers import charm_resources, get_prometheus_targets, query_prometheus, get_pebble_plan
+
 logger = logging.getLogger(__name__)
+
 #@pytest.mark.setup
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, syncbot_charm: str, cos_channel, config):
@@ -43,7 +46,7 @@ async def test_metrics_endpoint(ops_test: OpsTest):
     """Check that Syncbot appears in the Prometheus Scrape Targets."""
     assert ops_test.model is not None
     targets = await get_prometheus_targets(ops_test)
-    logger.info("Targets %s", targets)
+
     targets = [
         target
         for target in targets["activeTargets"]
@@ -56,3 +59,10 @@ async def test_metrics_in_prometheus(ops_test: OpsTest):
     """Check that the metrics sent by this charm appear in Prometheus."""
     result = await query_prometheus(ops_test, query='up{juju_charm=~"charmed-github-jira-bot"}')
     assert result
+
+async def test_log_targets(ops_test: OpsTest):
+    """Check that the log targets appear in the Pebble plan in the workload container."""
+
+    workload_plan = await get_pebble_plan(ops_test.model_name, "syncbot", 0, "gh-jira-bot")
+
+    assert "log-targets" in yaml.safe_load(workload_plan)

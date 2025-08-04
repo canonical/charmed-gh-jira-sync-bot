@@ -8,7 +8,6 @@ from charms.loki_k8s.v1.loki_push_api import LogForwarder
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from charms.redis_k8s.v0.redis import RedisRelationCharmEvents, RedisRequires
-from ops.model import BlockedStatus
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +44,6 @@ class GitHubJiraBotCharm(ops.CharmBase):
         )
 
         self._log_forwarder = LogForwarder(charm=self)
-
-        def _promtail_error(self, event):
-            logger.error(event.message)
-            self.unit.status = BlockedStatus(event.message)
 
         self.framework.observe(self.on.gh_jira_bot_pebble_ready, self._on_config_changed)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
