@@ -41,7 +41,7 @@ async def test_integrate(ops_test: OpsTest):
         timeout=300,
     )
 
-'''@retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
+@retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
 async def test_metrics_endpoint(ops_test: OpsTest):
     """Check that Syncbot appears in the Prometheus Scrape Targets."""
     assert ops_test.model is not None
@@ -65,7 +65,7 @@ async def test_log_targets(ops_test: OpsTest):
 
     workload_plan = await get_pebble_plan(ops_test.model_name, "syncbot", 0, "gh-jira-bot")
 
-    assert "log-targets" in yaml.safe_load(workload_plan)'''
+    assert "log-targets" in yaml.safe_load(workload_plan)
 
 @retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
 async def test_logs_in_loki(ops_test: OpsTest):
