@@ -5,6 +5,8 @@ from typing import Any
 import requests
 import logging
 import subprocess
+from tenacity import retry, stop_after_attempt, wait_fixed
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -97,3 +99,41 @@ async def get_pebble_plan(
         logger.error(e.stdout.decode())
         raise e
     return res.stdout.decode("utf-8")
+
+async def curl_syncbot(
+    ops_test: OpsTest, app: str = "syncbot"
+) -> Dict[str, Any]:
+    leader_unit_number = await get_leader_unit_number(ops_test, app)
+    syncbot_url = await get_unit_address(ops_test, app, leader_unit_number)
+
+    response = requests.get(
+        f"http://{syncbot_url}:3000/non-existing-endpoint",
+    )
+
+    assert response.status_code == 404
+
+async def query_loki(
+    ops_test: OpsTest, query: str, app: str = "loki"
+) -> Dict[str, Any]:
+    leader_unit_number = await get_leader_unit_number(ops_test, app)
+    loki_url = await get_unit_address(ops_test, app, leader_unit_number)
+
+    end_ns = int(time.time() * 1e9)
+    start_ns = int((time.time() - 3600) * 1e9)
+
+    params = {
+        "query": query,
+        "start": str(start_ns),
+        "end": str(end_ns),
+        "limit": "1000",
+        "direction": "forward"
+    }
+
+    response = requests.get(
+        f"http://{loki_url}:3100/loki/api/v1/query_range",
+        params=params,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    return response.json()["data"]["result"]

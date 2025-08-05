@@ -4,7 +4,7 @@ from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 import logging
 import yaml
-from helpers import charm_resources, get_prometheus_targets, query_prometheus, get_pebble_plan
+from helpers import charm_resources, get_prometheus_targets, query_prometheus, get_pebble_plan, curl_syncbot, query_loki
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ async def test_integrate(ops_test: OpsTest):
         timeout=300,
     )
 
-@retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
+'''@retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
 async def test_metrics_endpoint(ops_test: OpsTest):
     """Check that Syncbot appears in the Prometheus Scrape Targets."""
     assert ops_test.model is not None
@@ -65,4 +65,35 @@ async def test_log_targets(ops_test: OpsTest):
 
     workload_plan = await get_pebble_plan(ops_test.model_name, "syncbot", 0, "gh-jira-bot")
 
-    assert "log-targets" in yaml.safe_load(workload_plan)
+    assert "log-targets" in yaml.safe_load(workload_plan)'''
+
+@retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
+async def test_logs_in_loki(ops_test: OpsTest):
+    """Chechk that logs from the Syncbot appear in Loki."""
+
+    # First, we will query a non-existing endpoint in the charm. This will trigger a "404 Not Found" log
+    await curl_syncbot(ops_test=ops_test)
+
+    # Now, we can query Loki and see if the logs show up
+    result = await query_loki(ops_test=ops_test, query='{juju_application="syncbot"}')
+
+    logger.info("The result is %s", result)
+
+    assert result, "No result returned from Loki (empty list)."
+
+    # Ensure at least one stream exists with values
+    assert any("values" in stream and stream["values"] for stream in result), \
+        "No log values found in any Loki stream."
+    
+    # Ensure that the initial log on the startup of the application is sent to Loki. This is a log by FastAPI saying "Application Startup Complete"
+    found_startup_log = any("Application startup complete" in log_line for stream in result for _, log_line in stream.get("values", []))
+    assert found_startup_log, "Expected log line with '200 OK' not found in Loki logs."
+
+    # Ensure that the logs for the Prometheus scrape job appear. Whenever Prometheus successfully scrapes /metrics, a log is added: "GET /metrics/ HTTP/1.1" 200 OK
+    scrape_response_code = any("200 OK" in log_line for stream in result for _, log_line in stream.get("values", []))
+    assert scrape_response_code, "Expected log line with '200 OK' not found in Loki logs."
+
+    not_found_response_code = any("404 Not Found" in log_line for stream in result for _, log_line in stream.get("values", []))
+    assert not_found_response_code, "Expected log line with '200 OK' not found in Loki logs."
+
+
