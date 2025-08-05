@@ -8,7 +8,6 @@ from helpers import charm_resources, get_prometheus_targets, query_prometheus, g
 
 logger = logging.getLogger(__name__)
 
-#@pytest.mark.setup
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, syncbot_charm: str, cos_channel, config):
     """Build the charm-under-test and deploy it together with related charms."""
@@ -43,7 +42,7 @@ async def test_integrate(ops_test: OpsTest):
 
 @retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
 async def test_metrics_endpoint(ops_test: OpsTest):
-    """Check that Syncbot appears in the Prometheus Scrape Targets."""
+    """Check that Syncbot appears in the Prometheus scrape targets."""
     assert ops_test.model is not None
     targets = await get_prometheus_targets(ops_test)
 
@@ -74,10 +73,8 @@ async def test_logs_in_loki(ops_test: OpsTest):
     # First, we will query a non-existing endpoint in the charm. This will trigger a "404 Not Found" log
     await curl_syncbot(ops_test=ops_test)
 
-    # Now, we can query Loki and see if the logs show up
+    # Query Loki and see if the expected logs show up
     result = await query_loki(ops_test=ops_test, query='{juju_application="syncbot"}')
-
-    logger.info("The result is %s", result)
 
     assert result, "No result returned from Loki (empty list)."
 
@@ -93,7 +90,7 @@ async def test_logs_in_loki(ops_test: OpsTest):
     scrape_response_code = any("200 OK" in log_line for stream in result for _, log_line in stream.get("values", []))
     assert scrape_response_code, "Expected log line with '200 OK' not found in Loki logs."
 
+    # Ensure that the log from earlier call to the non-existing endpoint saying "404 Not Found" is found when querying Loki
     not_found_response_code = any("404 Not Found" in log_line for stream in result for _, log_line in stream.get("values", []))
     assert not_found_response_code, "Expected log line with '200 OK' not found in Loki logs."
-
 

@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 import os
 import asyncio
+
 store = defaultdict(str)
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,8 @@ def cos_channel():
 
 @pytest.fixture(scope="session")
 def config():
-    return {key:key for key in ["app-id", "jira-instance", "jira-username", "jira-token", "private-key","webhook-secret"]}
+    # For testing this charm's integration with Prometheus and Loki, we just need these config values to be non-empty.
+    return {key:key for key in ["app-id", "jira-instance", "jira-username", "jira-token", "private-key", "webhook-secret"]}
 
 def timed_memoizer(func):
     @functools.wraps(func)
