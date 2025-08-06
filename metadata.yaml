@@ -11,13 +11,19 @@ containers:
   gh-jira-bot:
     resource: oci-image
 
+provides:
+  metrics-endpoint:
+    interface: prometheus_scrape
+
 requires:
   nginx-route:
     interface: nginx-route
   redis:
     interface: redis
+  logging:
+    interface: loki_push_api
 
 resources:
   oci-image:
     type: oci-image
-    upstream-source: ghcr.io/canonical/gh-jira-sync-bot:0.0.15
+    upstream-source: ghcr.io/canonical/gh-jira-sync-bot:0.0.16
