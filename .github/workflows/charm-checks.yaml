@@ -47,33 +47,34 @@ jobs:
           uvx tox -e lint
 
   lib-check:
-  name: Check libraries
-  runs-on: ubuntu-latest
-  needs: [codeql, static-analysis, linting]
-  if: ${{ github.event_name == 'pull_request' }}
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    name: Check libraries
+    runs-on: ubuntu-latest
+    needs: [codeql, static-analysis, linting]
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Install charmcraft
-      run: sudo snap install charmcraft --classic --channel="latest/stable"
+      - name: Install charmcraft
+        run: sudo snap install charmcraft --classic --channel="latest/stable"
 
-    - name: Check charm libraries
-      env:
-        CHARMCRAFT_AUTH: ${{ secrets.CHARMHUB_TOKEN }}
-      run: |
-        cd "${{ inputs.charm-path }}"
-        fetch_lib="$(charmcraft fetch-lib)"
+      - name: Check charm libraries
+        env:
+          CHARMCRAFT_AUTH: ${{ secrets.CHARMHUB_TOKEN }}
+        run: |
+          cd "${{ inputs.charm-path }}"
+          fetch_lib="$(charmcraft fetch-lib)"
 
-        if echo "$fetch_lib" | grep -qE "not found in Charmhub|updated to version|has local changes"; then
-          echo "Charm libraries are out of sync: please sync them"
-          echo "$fetch_lib"
-          exit 1
-        else
-          echo "Charm libraries are in sync."
-        fi
+          if echo "$fetch_lib" | grep -qE "not found in Charmhub|updated to version|has local changes"; then
+            echo "Charm libraries are out of sync: please sync them"
+            echo "$fetch_lib"
+            exit 1
+          else
+            echo "Charm libraries are in sync."
+          fi
+    
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
