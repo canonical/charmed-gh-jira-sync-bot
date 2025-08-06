@@ -5,6 +5,23 @@ on:
   pull_request:
 
 jobs:
+  codeql:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
   static-analysis:
     name: Static Analysis
     runs-on: ubuntu-latest
@@ -29,10 +46,39 @@ jobs:
           cd .
           uvx tox -e lint
 
+  lib-check:
+    name: Check libraries
+    runs-on: ubuntu-latest
+    needs: [codeql, static-analysis, linting]
+    if: ${{ github.event_name == 'pull_request' && needs.ci-ignore.outputs.any_modified == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install charmcraft
+        env:
+          CHARMCRAFT_CHANNEL: "${{ inputs.charmcraft-channel }}"
+        run: sudo snap install charmcraft --classic --channel="$CHARMCRAFT_CHANNEL"
+      - name: Check charm libraries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHARMCRAFT_AUTH: ${{ secrets.CHARMHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          cd "${{ inputs.charm-path }}"
+          fetch_lib="$(charmcraft fetch-lib)"
+          # If charm libraries are not up-to-date
+          if echo "$fetch_lib" | grep -qE "not found in Charmhub|updated to version|has local changes"; then
+            gh pr edit "$PR_NUMBER" --remove-label "Charm Libraries: OK" --add-label "Charm Libraries: Out of Sync"
+          else
+            gh pr edit "$PR_NUMBER" --remove-label "Charm Libraries: Out of Sync" --add-label "Charm Libraries: OK"
+          fi
+
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [static-analysis, linting]
+    needs: [codeql, static-analysis, linting, lib-check]
     env:
       CONCIERGE_JUJU_CHANNEL: stable
       CONCIERGE_MICROK8S_CHANNEL: 1.32-strict/stable
