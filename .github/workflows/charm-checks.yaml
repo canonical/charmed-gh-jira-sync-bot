@@ -57,13 +57,10 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install charmcraft
-        env:
-          CHARMCRAFT_CHANNEL: "${{ inputs.charmcraft-channel }}"
-        run: sudo snap install charmcraft --classic --channel="$CHARMCRAFT_CHANNEL"
+        run: sudo snap install charmcraft --classic --channel="latest/stable"
       - name: Check charm libraries
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHARMCRAFT_AUTH: ${{ secrets.CHARMHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.number }}
         run: |
           cd "${{ inputs.charm-path }}"
