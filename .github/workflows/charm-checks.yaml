@@ -32,7 +32,7 @@ jobs:
         run: |
           sudo snap install astral-uv --classic
           cd .
-          tox -e static
+          uvx tox -e static
 
   linting:
     name: Linting
@@ -44,7 +44,7 @@ jobs:
         run: |
           sudo snap install astral-uv --classic
           cd .
-          tox -e lint
+          uvx tox -e lint
 
   lib-check:
     name: Check libraries
@@ -97,4 +97,4 @@ jobs:
       - name: Run integration tests
         run: |
           cd .
-          tox -e integration
+          uvx tox -e integration
