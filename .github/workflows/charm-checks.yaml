@@ -1,0 +1,50 @@
+name: Quality Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo snap install astral-uv --classic
+          cd "."
+          uvx tox -e static
+
+  linting:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo snap install astral-uv --classic
+          cd "."
+          uvx tox -e lint
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [static-analysis, linting]
+    env:
+      CONCIERGE_JUJU_CHANNEL: stable
+      CONCIERGE_CHARMCRAFT_CHANNEL: latest/stable
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo snap install concierge --classic
+          sudo snap install kubectl --classic
+          juju model-defaults automatically-retry-hooks=true
+      - name: Run integration tests
+        run: |
+          cd "."
+          uvx tox -e integration
