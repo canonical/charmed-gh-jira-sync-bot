@@ -68,7 +68,7 @@ async def test_log_targets(ops_test: OpsTest):
 
 @retry(wait=wait_fixed(10), stop=stop_after_attempt(6))
 async def test_logs_in_loki(ops_test: OpsTest):
-    """Chechk that logs from the Syncbot appear in Loki."""
+    """Check that logs from the Syncbot appear in Loki."""
 
     # First, we will query a non-existing endpoint in the charm. This will trigger a "404 Not Found" log
     await curl_syncbot(ops_test=ops_test)
