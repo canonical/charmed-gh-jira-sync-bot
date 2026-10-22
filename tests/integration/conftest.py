@@ -18,8 +18,9 @@ def cos_channel():
 
 @pytest.fixture(scope="session")
 def config():
-    # For testing this charm's integration with Prometheus and Loki, we just need these config values to be non-empty.
-    return {key:key for key in ["app-id", "jira-instance", "jira-username", "jira-token", "private-key", "webhook-secret"]}
+    # Required (optional: false) plain config options; just need to be non-empty
+    # for testing this charm's integration with Prometheus and Loki.
+    return {key: key for key in ["jira-instance", "jira-username", "github-app-id"]}
 
 def timed_memoizer(func):
     @functools.wraps(func)

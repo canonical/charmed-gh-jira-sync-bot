@@ -14,12 +14,29 @@ async def test_build_and_deploy(ops_test: OpsTest, syncbot_charm: str, cos_chann
     assert ops_test.model is not None  # for pyright
     await asyncio.gather(
         ops_test.model.deploy(syncbot_charm, "syncbot", resources=charm_resources(), trust=True, config=config),
+        ops_test.model.deploy("redis-k8s", "redis", channel="latest/edge", trust=True),
         ops_test.model.deploy("prometheus-k8s", "prometheus", channel=cos_channel, trust=True),
         ops_test.model.deploy("loki-k8s", "loki", channel=cos_channel, trust=True),
     )
 
+    # Provide the secret-backed config options the FastAPI app reads at startup.
+    secrets = {
+        "github": ["private-key=dummy"],
+        "webhook": ["secret=dummy"],
+        "jira": ["token=dummy"],
+    }
+    secret_config = {}
+    for option, data in secrets.items():
+        secret_id = await ops_test.model.add_secret(option, data)
+        await ops_test.model.grant_secret(option, "syncbot")
+        secret_config[option] = secret_id
+    await ops_test.model.applications["syncbot"].set_config(secret_config)
+
+    # redis is a required (optional: false) relation, so integrate before settling.
+    await ops_test.model.integrate("syncbot", "redis")
+
     await ops_test.model.wait_for_idle(
-        apps=["prometheus", "loki", "syncbot"], status="active"
+        apps=["prometheus", "loki", "redis", "syncbot"], status="active"
     )
 
 @pytest.mark.abort_on_fail
@@ -62,7 +79,7 @@ async def test_metrics_in_prometheus(ops_test: OpsTest):
 async def test_log_targets(ops_test: OpsTest):
     """Check that the log targets appear in the Pebble plan in the workload container."""
 
-    workload_plan = await get_pebble_plan(ops_test.model_name, "syncbot", 0, "gh-jira-bot")
+    workload_plan = await get_pebble_plan(ops_test.model_name, "syncbot", 0, "app")
 
     assert "log-targets" in yaml.safe_load(workload_plan)
 

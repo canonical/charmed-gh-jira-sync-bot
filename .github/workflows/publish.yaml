@@ -6,24 +6,58 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  CHARM_NAME: charmed-github-jira-bot
+  RESOURCE_NAME: app-image
+  ROCK_IMAGE: ghcr.io/canonical/gh-jira-sync-bot:1.0.0
 
 jobs:
-  build:
-    name: Release
+  release:
+    name: Release to Charmhub
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Select charmhub channel
+
+      - name: Select Charmhub channel
         uses: canonical/charming-actions/channel@2.7.0
         id: channel
-      - name: Upload charm to charmhub
-        uses: canonical/charming-actions/upload-charm@2.7.0
-        with:
-          credentials: "${{ secrets.CHARMCRAFT_TOKEN }}"
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-          upload-image: "true"
-          channel: "${{ steps.channel.outputs.name }}"
+
+      - name: Install charmcraft
+        run: sudo snap install charmcraft --classic
+
+      - name: Set up LXD
+        uses: canonical/setup-lxd@main
+
+      - name: Pack charm
+        run: charmcraft pack --verbose
+
+      - name: Resolve rock image
+        id: image
+        run: |
+          image="${{ env.ROCK_IMAGE }}"
+          echo "ref=${image}" >> "$GITHUB_OUTPUT"
+          docker pull "${image}"
+          image_id="$(docker images --no-trunc --quiet "${image}" | head -n1 | sed 's/^sha256://')"
+          echo "id=${image_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload charm, resource and release
+        env:
+          CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_TOKEN }}
+        run: |
+          # The app-image resource is declared by the fastapi-framework extension.
+          # Upload the charm revision first so the resource is known to Charmhub.
+          charm_rev="$(charmcraft upload ./*.charm --format json | jq -r '.revision')"
+
+          # Attach the rock image as the app-image OCI resource.
+          resource_rev="$(charmcraft upload-resource "${CHARM_NAME}" "${RESOURCE_NAME}" \
+            --image "${{ steps.image.outputs.id }}" --format json | jq -r '.revision')"
+
+          charmcraft release "${CHARM_NAME}" \
+            --revision "${charm_rev}" \
+            --channel "${{ steps.channel.outputs.name }}" \
+            --resource "${RESOURCE_NAME}:${resource_rev}"
